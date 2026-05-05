@@ -1,17 +1,600 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CMS &amp; HIPAA Interactive Study Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --teal: #0D7377;
+  --teal-bg: #E8F8F8;
+  --navy: #1B2A4A;
+  --navy-light: #2C4370;
+  --coral: #E8635A;
+  --coral-bg: #FFEBE9;
+  --gold: #D4A24E;
+  --gold-bg: #FFF6E5;
+  --green: #2E8B57;
+  --green-bg: #E6F5ED;
+  --purple: #6B5CA5;
+  --purple-bg: #F0EEFF;
+  --text: #1B2A4A;
+  --text-light: #5A6B8A;
+  --border: #E2E6EE;
+}
 
-const TEAL = "#0D7377";
-const TEAL_BG = "#E8F8F8";
-const NAVY = "#1B2A4A";
-const CORAL = "#E8635A";
-const CORAL_BG = "#FFEBE9";
-const GOLD = "#D4A24E";
-const GOLD_BG = "#FFF6E5";
-const GREEN = "#2E8B57";
-const GREEN_BG = "#E6F5ED";
-const PURPLE = "#6B5CA5";
-const PURPLE_BG = "#F0EEFF";
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: #FAFAF7;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+.hero {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 50%, var(--teal) 100%);
+  color: white;
+  padding: 44px 20px 32px;
+  text-align: center;
+}
+
+.hero h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(24px, 5vw, 36px);
+  margin-bottom: 8px;
+}
+
+.hero p { font-size: 14px; opacity: 0.8; max-width: 500; margin: 0 auto; }
+
+.tab-bar {
+  display: flex;
+  background: white;
+  border-bottom: 2px solid #E8E8E8;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 14px 10px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: #888;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.tab-btn.active { border-bottom-color: var(--teal); background: rgba(13,115,119,0.03); color: var(--teal); }
+.tab-btn[data-tab="quiz"].active { border-bottom-color: var(--teal); color: var(--teal); }
+.tab-btn[data-tab="match"].active { border-bottom-color: var(--gold); color: var(--gold); }
+.tab-btn[data-tab="flash"].active { border-bottom-color: var(--purple); color: var(--purple); }
+
+.container { max-width: 800px; margin: 0 auto; padding: 24px 16px 60px; }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.card {
+  background: white;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 16px;
+  border: 1px solid #E8E8E8;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+.card p { color: var(--text-light); font-size: 14px; line-height: 1.7; margin-bottom: 10px; }
+.card p:last-child { margin-bottom: 0; }
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 32px;
+  margin-bottom: 14px;
+}
+
+.section-num {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-family: 'DM Serif Display', serif; font-size: 20px;
+  flex-shrink: 0;
+}
+
+.section-header h2 {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(18px, 4vw, 24px);
+  color: var(--navy);
+}
+
+/* ACRONYM GRID */
+.acronym-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.acronym-card {
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  border-top: 4px solid;
+}
+
+.acronym-card .icon { font-size: 26px; margin-bottom: 4px; }
+
+.acronym-card .abbr {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  margin-bottom: 2px;
+}
+
+.acronym-card .full-name {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.7;
+  margin-bottom: 8px;
+}
+
+.acronym-card .desc { font-size: 12px; color: #555; line-height: 1.5; }
+
+/* FLOW */
+.flow-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 20px 0 6px;
+  flex-wrap: wrap;
+}
+
+.flow-step {
+  padding: 10px 16px;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 13px;
+  min-width: 90px;
+}
+
+.flow-step small { display: block; font-size: 10px; font-weight: 500; opacity: 0.8; }
+.flow-arrow { font-size: 20px; color: #CCC; }
+
+/* DEEMING */
+.deeming-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+
+.deeming-box {
+  border-radius: 14px;
+  padding: 16px 20px;
+  text-align: center;
+  min-width: 130px;
+  border: 2px solid;
+}
+
+.deeming-box .d-icon { font-size: 28px; }
+.deeming-box .d-label { font-weight: 700; font-size: 15px; margin-top: 4px; }
+.deeming-box .d-sub { font-size: 11px; color: #666; }
+.deeming-arrow { font-size: 22px; font-weight: 700; color: var(--green); }
+
+/* TX TABLE */
+.tx-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.tx-table th {
+  background: var(--teal);
+  color: white;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.tx-table td { padding: 8px 12px; }
+.tx-table tr:nth-child(even) td { background: #F7F8FA; }
+.tx-code { font-weight: 700; color: var(--teal); }
+
+/* CODE GRID */
+.code-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.code-item {
+  background: white;
+  border-left: 4px solid;
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.code-item .code-name { font-weight: 700; font-size: 14px; margin-bottom: 2px; }
+.code-item .code-desc { font-size: 12px; color: #666; }
+
+.callout {
+  border-radius: 10px;
+  padding: 14px;
+  margin-top: 16px;
+  border-left: 4px solid;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* QUIZ */
+.filter-row { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+
+.filter-btn {
+  padding: 8px 14px; border-radius: 8px; border: 2px solid var(--border);
+  background: white; color: #888; font-weight: 600; font-size: 12px;
+  cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+
+.filter-btn.active {
+  border-color: var(--teal);
+  background: var(--teal-bg);
+  color: var(--teal);
+}
+
+.quiz-q { font-weight: 600; font-size: 15px; color: var(--navy); margin-bottom: 14px; line-height: 1.6; }
+
+.quiz-options { display: flex; flex-direction: column; gap: 8px; }
+
+.opt-btn {
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background: #F7F8FA;
+  color: var(--navy);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.opt-btn:hover:not(.answered) { border-color: var(--teal); background: var(--teal-bg); }
+
+.opt-letter {
+  width: 26px; height: 26px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  background: #E2E6EE; color: var(--navy);
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
+}
+
+.opt-btn.correct { border-color: var(--green); background: var(--green-bg); color: var(--green); }
+.opt-btn.correct .opt-letter { background: var(--green); color: white; }
+.opt-btn.wrong { border-color: var(--coral); background: var(--coral-bg); color: var(--coral); }
+.opt-btn.wrong .opt-letter { background: var(--coral); color: white; }
+.opt-btn.dimmed { background: #F0F0F0; color: #999; border-color: #E8E8E8; }
+
+.explanation {
+  margin-top: 12px; padding: 12px 16px; border-radius: 10px;
+  font-size: 13px; line-height: 1.6; color: var(--navy);
+}
+
+.explanation.right { background: var(--green-bg); border-left: 4px solid var(--green); }
+.explanation.wrong-exp { background: var(--coral-bg); border-left: 4px solid var(--coral); }
+
+.score-card { margin-bottom: 16px; }
+
+.score-bar-track { height: 8px; border-radius: 4px; background: #E8E8E8; }
+.score-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+
+.section-badge {
+  padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;
+  display: inline-block; margin-right: 8px;
+}
+
+.reset-btn {
+  padding: 6px 14px; border-radius: 8px; border: 1px solid var(--coral);
+  background: var(--coral-bg); color: var(--coral); font-weight: 600;
+  font-size: 12px; cursor: pointer; font-family: inherit;
+}
+
+.final-score {
+  background: linear-gradient(135deg, var(--navy), var(--teal));
+  border-radius: 16px; padding: 28px; color: white; text-align: center;
+  margin-top: 16px;
+}
+
+.final-score .big-icon { font-size: 40px; margin-bottom: 8px; }
+
+.final-score h3 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 24px; margin-bottom: 6px;
+}
+
+.final-score p { font-size: 15px; opacity: 0.9; }
+
+.retry-btn {
+  margin-top: 16px; padding: 10px 24px; border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.15); color: white;
+  font-weight: 700; font-size: 14px; cursor: pointer; font-family: inherit;
+}
+
+/* MATCHING */
+.match-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.match-col { display: flex; flex-direction: column; gap: 8px; }
+
+.match-btn {
+  padding: 12px 14px; border-radius: 10px; border: 2px solid var(--border);
+  background: #F7F8FA; font-weight: 700; font-size: 14px;
+  cursor: pointer; font-family: inherit; text-align: center;
+  transition: all 0.2s;
+}
+
+.match-btn.right-side { font-weight: 500; font-size: 12px; line-height: 1.4; }
+.match-btn.selected { border-color: var(--teal); background: rgba(13,115,119,0.06); color: var(--teal); }
+.match-btn.matched { border-color: var(--green); background: var(--green-bg); color: var(--green); opacity: 0.6; cursor: default; }
+.match-btn.flash-wrong { border-color: var(--coral); background: var(--coral-bg); color: var(--coral); }
+
+.match-success {
+  margin-top: 14px; padding: 10px 16px; border-radius: 10px;
+  background: var(--green-bg); border-left: 4px solid var(--green);
+  font-size: 14px; font-weight: 600; color: var(--green);
+}
+
+/* FLASHCARDS */
+.fc-nav {
+  display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 16px;
+}
+
+.fc-arrow {
+  width: 40px; height: 40px; border-radius: 10px;
+  border: 2px solid var(--border); background: white;
+  font-size: 18px; cursor: pointer; font-family: inherit; color: var(--navy);
+  display: flex; align-items: center; justify-content: center;
+}
+
+.fc-arrow:disabled { opacity: 0.3; cursor: default; }
+
+.fc-card {
+  min-height: 200px; border-radius: 16px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 28px; text-align: center;
+  transition: all 0.35s ease;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  user-select: none;
+}
+
+.fc-card .fc-term {
+  font-size: 36px; font-weight: 800;
+  font-family: 'DM Serif Display', serif;
+  letter-spacing: 1px;
+}
+
+.fc-card .fc-hint { font-size: 11px; margin-top: 12px; opacity: 0.7; }
+.fc-card .fc-def { font-size: 14px; line-height: 1.7; }
+
+.fc-dots {
+  display: flex; gap: 6px; justify-content: center; margin-top: 20px; flex-wrap: wrap;
+}
+
+.fc-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: none; cursor: pointer; transition: all 0.2s;
+}
+
+@media (max-width: 600px) {
+  .acronym-grid { grid-template-columns: 1fr 1fr; }
+  .deeming-row { flex-direction: column; }
+  .flow-row { flex-direction: column; }
+  .flow-arrow { transform: rotate(90deg); }
+  .code-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>CMS &amp; HIPAA Study Guide</h1>
+  <p>Interactive learning for medical billers and coders</p>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="learn" onclick="switchTab('learn')">📖 Learn</button>
+  <button class="tab-btn" data-tab="quiz" onclick="switchTab('quiz')">✏️ Quiz</button>
+  <button class="tab-btn" data-tab="match" onclick="switchTab('match')">🔗 Match</button>
+  <button class="tab-btn" data-tab="flash" onclick="switchTab('flash')">🃏 Cards</button>
+</div>
+
+<div class="container">
+
+<!-- ====================== LEARN TAB ====================== -->
+<div id="tab-learn" class="tab-content active">
+
+  <!-- Section 1 -->
+  <div class="section-header">
+    <div class="section-num" style="background:var(--teal)">1</div>
+    <h2>RAC, MIP, HEAT &amp; CMS IOM</h2>
+  </div>
+  <div class="card">
+    <p>These four programs all protect Medicare's financial integrity — but each has a distinct job. Think of them as a team:</p>
+    <div class="acronym-grid">
+      <div class="acronym-card" style="background:var(--teal-bg);border-top-color:var(--teal)">
+        <div class="icon">🔍</div>
+        <div class="abbr" style="color:var(--teal)">RAC</div>
+        <div class="full-name" style="color:var(--teal)">Recovery Audit Contractor</div>
+        <div class="desc">Private auditors who <strong>find and recover</strong> improper Medicare payments — both overpayments and underpayments.</div>
+      </div>
+      <div class="acronym-card" style="background:var(--coral-bg);border-top-color:var(--coral)">
+        <div class="icon">🛡️</div>
+        <div class="abbr" style="color:var(--coral)">MIP</div>
+        <div class="full-name" style="color:var(--coral)">Medicare Integrity Program</div>
+        <div class="desc"><strong>Legal authority</strong> (Section 1893 of the SSA) for CMS to contract out integrity work like audits and education.</div>
+      </div>
+      <div class="acronym-card" style="background:var(--gold-bg);border-top-color:var(--gold)">
+        <div class="icon">⚖️</div>
+        <div class="abbr" style="color:var(--gold)">HEAT</div>
+        <div class="full-name" style="color:var(--gold)">Fraud Enforcement Team</div>
+        <div class="desc">Joint <strong>DOJ + HHS task force</strong> that investigates and prosecutes criminal healthcare fraud.</div>
+      </div>
+      <div class="acronym-card" style="background:var(--purple-bg);border-top-color:var(--purple)">
+        <div class="icon">📘</div>
+        <div class="abbr" style="color:var(--purple)">CMS IOM</div>
+        <div class="full-name" style="color:var(--purple)">CMS Internet Only Manual</div>
+        <div class="desc">The <strong>official operating manual</strong> giving Medicare contractors claims processing and coverage guidance.</div>
+      </div>
+    </div>
+    <div class="flow-row">
+      <div class="flow-step" style="background:var(--coral-bg);color:var(--coral)">MIP<small>Authorizes</small></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step" style="background:var(--teal-bg);color:var(--teal)">RAC<small>Audits</small></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step" style="background:var(--gold-bg);color:#B8862D">HEAT<small>Prosecutes</small></div>
+    </div>
+    <p style="text-align:center;font-size:12px;color:#999;margin-top:2px">CMS IOM provides the rulebook for everyone above ↑</p>
+  </div>
+
+  <!-- Section 2 -->
+  <div class="section-header">
+    <div class="section-num" style="background:var(--green)">2</div>
+    <h2>Conditions of Participation &amp; Deeming</h2>
+  </div>
+  <div class="card">
+    <p><strong style="color:var(--navy)">Conditions of Participation (CoPs)</strong> are the minimum health and safety standards every facility must meet to participate in Medicare/Medicaid.</p>
+    <p><strong style="color:var(--green)">Deeming</strong> happens when CMS recognizes a private accreditor whose standards meet or exceed CoPs — accredited facilities are then "deemed" compliant without a separate state survey.</p>
+    <div class="deeming-row">
+      <div class="deeming-box" style="background:var(--teal-bg);border-color:var(--teal)">
+        <div class="d-icon">🏛️</div>
+        <div class="d-label" style="color:var(--teal)">CMS</div>
+        <div class="d-sub">Sets CoPs</div>
+      </div>
+      <span class="deeming-arrow">→</span>
+      <div class="deeming-box" style="background:var(--gold-bg);border-color:var(--gold)">
+        <div class="d-icon">🏅</div>
+        <div class="d-label" style="color:var(--gold)">Accreditor</div>
+        <div class="d-sub">Standards ≥ CoPs</div>
+      </div>
+      <span class="deeming-arrow">→</span>
+      <div class="deeming-box" style="background:var(--green-bg);border-color:var(--green)">
+        <div class="d-icon">🏥</div>
+        <div class="d-label" style="color:var(--green)">Facility</div>
+        <div class="d-sub">Deemed compliant</div>
+      </div>
+    </div>
+    <div class="callout" style="background:#FFF9ED;border-left-color:var(--gold);color:#6B5300">
+      <strong>Key point:</strong> Deeming never lowers the bar. The accreditor's standards must <em>match or exceed</em> CMS CoPs. CMS can still do validation surveys on deemed facilities.
+    </div>
+  </div>
+
+  <!-- Section 3 -->
+  <div class="section-header">
+    <div class="section-num" style="background:var(--coral)">3</div>
+    <h2>HIPAA Transactions &amp; Code Sets</h2>
+  </div>
+  <div class="card">
+    <p>HIPAA's Administrative Simplification mandates standard electronic formats (<strong>ASC X12N transactions</strong>) for all billing activities, replacing the old payer-specific paper and flat-file formats.</p>
+    <table class="tx-table">
+      <thead><tr><th>Code</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td class="tx-code">837</td><td>Submit claims (professional, institutional, dental)</td></tr>
+        <tr><td class="tx-code">835</td><td>Remittance advice — explanation of payment</td></tr>
+        <tr><td class="tx-code">270/271</td><td>Eligibility inquiry and response</td></tr>
+        <tr><td class="tx-code">276/277</td><td>Claim status inquiry and response</td></tr>
+        <tr><td class="tx-code">278</td><td>Prior authorization / referral request</td></tr>
+        <tr><td class="tx-code">834</td><td>Enrollment and disenrollment</td></tr>
+        <tr><td class="tx-code">820</td><td>Premium payment transfers</td></tr>
+      </tbody>
+    </table>
+    <p><strong style="color:var(--navy)">Code Sets</strong> — the standardized vocabulary inside the transactions:</p>
+    <div class="code-grid">
+      <div class="code-item" style="border-left-color:var(--coral)"><div class="code-name" style="color:var(--coral)">ICD-10-CM/PCS</div><div class="code-desc">Diagnoses &amp; inpatient procedures</div></div>
+      <div class="code-item" style="border-left-color:var(--teal)"><div class="code-name" style="color:var(--teal)">CPT</div><div class="code-desc">Physician &amp; outpatient procedures</div></div>
+      <div class="code-item" style="border-left-color:var(--gold)"><div class="code-name" style="color:var(--gold)">HCPCS Level II</div><div class="code-desc">Supplies, DME, drugs, ambulance</div></div>
+      <div class="code-item" style="border-left-color:var(--purple)"><div class="code-name" style="color:var(--purple)">NDC</div><div class="code-desc">Drug product identifiers (10-digit)</div></div>
+      <div class="code-item" style="border-left-color:var(--green)"><div class="code-name" style="color:var(--green)">CDT</div><div class="code-desc">Dental procedure codes</div></div>
+      <div class="code-item" style="border-left-color:var(--navy)"><div class="code-name" style="color:var(--navy)">Revenue Codes</div><div class="code-desc">Facility charge classification</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== QUIZ TAB ====================== -->
+<div id="tab-quiz" class="tab-content"></div>
+
+<!-- ====================== MATCH TAB ====================== -->
+<div id="tab-match" class="tab-content"></div>
+
+<!-- ====================== FLASH TAB ====================== -->
+<div id="tab-flash" class="tab-content"></div>
+
+</div>
+
+<script>
+// ============ DATA ============
+const allQuizzes = [
+  {section:1,q:"Which program hires private contractors to find and recover improper Medicare payments?",correct:"Recovery Audit Contractor (RAC)",wrong:["Medicare Integrity Program (MIP)","Health Care Fraud Action Team (DOJ)","CMS Internet Only Manual (IOM ref)"],explanation:"RAC contractors are specifically hired by CMS to detect both overpayments and underpayments in the Medicare fee-for-service program and recover those funds."},
+  {section:1,q:"What federal legislation authorizes CMS to contract out integrity work like audits and reviews?",correct:"Medicare Integrity Program (MIP)",wrong:["Recovery Audit Contractor (RAC)","Health Care Fraud Action Team (DOJ)","CMS Internet Only Manual (IOM ref)"],explanation:"MIP, established by Section 1893 of the Social Security Act, gives CMS the legal authority to contract out program integrity functions including audits, cost-report reviews, and provider education."},
+  {section:1,q:"A joint DOJ and HHS task force investigates healthcare fraud. What is this entity called?",correct:"HEAT (Fraud Enforcement Team)",wrong:["RAC (Recovery Audit Program)","MIP (Medicare Integrity Auth.)","IOM (CMS Operations Manual ref)"],explanation:"HEAT (Health Care Fraud Prevention & Enforcement Action Team) is a joint Department of Justice and HHS initiative focused on criminal and civil prosecution of healthcare fraud."},
+  {section:1,q:"Where do Medicare contractors find official step-by-step claims processing guidance?",correct:"CMS Internet Only Manual (IOM)",wrong:["Recovery Audit Contractor (RAC)","Medicare Integrity Program (MIP)","HEAT Fraud Enforcement Portal"],explanation:"The CMS Internet Only Manual (IOM) is the official online publication providing Medicare contractors with detailed operational instructions for claims processing, coverage determinations, and program rules."},
+  {section:1,q:"A coder notices a pattern of upcoding at their facility. Which entity might investigate?",correct:"HEAT task force investigators",wrong:["CMS IOM manual publishers app","Recovery Audit Contractors org","Accreditation body surveyors"],explanation:"Systematic upcoding is a form of fraud. HEAT investigates and prosecutes criminal fraud patterns, while RAC focuses on recovering individual improper payments rather than prosecuting fraud."},
+  {section:1,q:"RAC auditors contact your facility requesting medical records. What is their primary goal?",correct:"Identify and recoup overpayments",wrong:["Prosecute providers for fraud now","Update CMS operating manuals ref","Authorize new integrity audit work"],explanation:"RACs are specifically tasked with reviewing claims and medical records to identify improper payments — primarily overpayments that must be returned, but also underpayments owed to providers."},
+  {section:2,q:"What must a healthcare facility meet to participate in the Medicare program?",correct:"CMS Conditions of Participation",wrong:["HIPAA transaction code mandates","RAC recovery audit benchmarks","State-only licensing agreements"],explanation:"Conditions of Participation (CoPs) are the minimum health and safety standards set by CMS that facilities must meet to enroll in and receive payment from Medicare and Medicaid."},
+  {section:2,q:"An accreditor's standards meet or exceed CMS requirements. CMS recognition of this is called?",correct:"The deeming authority process",wrong:["The certification audit cycle","The compliance waiver review","The provisional license grant"],explanation:"Deeming is the process where CMS recognizes that an accreditation organization's standards are at least as stringent as the CoPs, allowing accredited facilities to be 'deemed' compliant."},
+  {section:2,q:"Does deeming allow an accreditor to set standards lower than CMS requirements?",correct:"No — standards must match or exceed",wrong:["Yes — accreditors set their own bar","Yes — if the state grants a waiver ok","No — but only for critical-access sites"],explanation:"Deeming never lowers the bar. An accreditor receives deeming authority only when CMS determines its standards meet or exceed every applicable Condition of Participation."},
+  {section:2,q:"Which organization is the most widely recognized hospital accreditor with deeming authority?",correct:"The Joint Commission (TJC body)",wrong:["DNV Healthcare (ISO-based body)","AAAHC (ambulatory care body ok)","CARF (rehabilitation-focused org)"],explanation:"The Joint Commission is the most widely recognized accrediting body with CMS deeming authority, accrediting thousands of hospitals, ambulatory care centers, and behavioral health facilities."},
+  {section:2,q:"Can CMS still survey a facility that already holds deemed status from an accreditor?",correct:"Yes — through validation surveys",wrong:["No — deeming replaces all surveys","No — only the state may re-survey","Yes — but only within first year ok"],explanation:"CMS retains the right to conduct validation surveys on deemed facilities to verify that the accrediting organization is properly enforcing standards that meet or exceed the CoPs."},
+  {section:2,q:"A facility accredited by a CMS-recognized body skips the state survey. Why is this allowed?",correct:"Deemed status satisfies CMS rules",wrong:["State surveys are always optional","Accreditation waives all oversight","The facility paid a one-time waiver"],explanation:"When a facility holds accreditation from a body with CMS deeming authority, it is 'deemed' to meet CoPs without needing a separate state certification survey for Medicare participation."},
+  {section:3,q:"Which HIPAA standard transaction is used to submit an electronic professional claim?",correct:"ASC X12N 837 (claim submission)",wrong:["ASC X12N 835 (payment remittance)","ASC X12N 270 (eligibility inquiry)","ASC X12N 276 (claim status check)"],explanation:"The 837P (Professional) is the HIPAA-mandated standard for submitting professional claims electronically. The 837 family also includes 837I (Institutional) and 837D (Dental)."},
+  {section:3,q:"A billing office receives an electronic explanation of benefits from a payer. Which transaction?",correct:"ASC X12N 835 (remittance advice)",wrong:["ASC X12N 837 (claim submission tx)","ASC X12N 278 (prior authorization)","ASC X12N 834 (enrollment/disenroll)"],explanation:"The 835 transaction is the electronic remittance advice (ERA) — the payer's explanation of how a claim was adjudicated, what was paid, adjusted, or denied, and why."},
+  {section:3,q:"Before a patient visit, staff verify insurance coverage electronically. Which transaction pair?",correct:"270/271 (eligibility inquiry/reply)",wrong:["276/277 (claim status check/reply)","837/835 (claim submit and payment)","278/820 (auth request and premium)"],explanation:"The 270 is the eligibility inquiry sent to the payer, and the 271 is the payer's response with the patient's coverage details — used before services are rendered."},
+  {section:3,q:"Which code set is used for physician and outpatient procedure coding on claims?",correct:"CPT codes (maintained by the AMA)",wrong:["ICD-10-PCS (inpatient procedures)","NDC codes (drug product identfiers)","CDT codes (dental procedure system)"],explanation:"Current Procedural Terminology (CPT), maintained by the American Medical Association, is the standard code set for reporting physician and outpatient services on professional claims."},
+  {section:3,q:"A pharmacy claim requires a unique drug product identifier. Which code set applies here?",correct:"National Drug Code (NDC system)",wrong:["CPT codes (procedure terminology)","HCPCS Level II (supplies and DME)","Revenue codes (facility locations)"],explanation:"The National Drug Code (NDC) is a unique 10-digit identifier assigned to every drug product, identifying the labeler, product formulation, and package size."},
+  {section:3,q:"HCPCS Level II codes cover which category that CPT does not fully address?",correct:"Supplies, DME, drugs, and ambulance",wrong:["Inpatient surgical procedure steps","Dental restorative care treatments","Outpatient office visit encounters"],explanation:"HCPCS Level II national codes fill the gaps that CPT doesn't cover — including durable medical equipment (DME), prosthetics, orthotics, supplies, ambulance services, and certain drugs."},
+];
+
+const matchingActivities = [
+  {section:1,title:"Match the Acronym to Its Role",pairs:[{left:"RAC",right:"Recovers improper Medicare payments"},{left:"MIP",right:"Authorizes integrity contract work"},{left:"HEAT",right:"Prosecutes healthcare fraud cases"},{left:"CMS IOM",right:"Official claims processing manual"}]},
+  {section:2,title:"Match the Accreditor to Its Focus",pairs:[{left:"TJC",right:"Hospitals and broad healthcare"},{left:"DNV",right:"ISO quality plus Medicare CoPs"},{left:"CARF",right:"Rehabilitation and behavioral health"},{left:"AAAHC",right:"Ambulatory surgery and clinics"}]},
+  {section:3,title:"Match the Transaction to Its Purpose",pairs:[{left:"837",right:"Submit electronic health claims"},{left:"835",right:"Receive remittance advice (ERA)"},{left:"270/271",right:"Verify patient eligibility first"},{left:"276/277",right:"Check claim processing status"}]},
+];
+
+const flashcards = [
+  {front:"RAC",back:"Recovery Audit Contractor — private auditors hired by CMS to find and recover Medicare overpayments and underpayments.",color:"#0D7377"},
+  {front:"MIP",back:"Medicare Integrity Program — Section 1893 of the SSA authorizing CMS to contract out integrity work like audits and education.",color:"#E8635A"},
+  {front:"HEAT",back:"Health Care Fraud Prevention & Enforcement Action Team — joint DOJ + HHS task force that prosecutes fraud.",color:"#D4A24E"},
+  {front:"CMS IOM",back:"CMS Internet Only Manual — the official online reference guiding contractors on claims processing and coverage rules.",color:"#6B5CA5"},
+  {front:"CoPs",back:"Conditions of Participation — minimum health and safety standards that facilities must meet to bill Medicare/Medicaid.",color:"#2E8B57"},
+  {front:"Deeming",back:"The process where CMS recognizes an accreditor whose standards meet or exceed CoPs, granting facilities deemed status.",color:"#0D7377"},
+  {front:"837",back:"HIPAA standard electronic claim transaction — supports professional (837P), institutional (837I), and dental (837D) claims.",color:"#E8635A"},
+  {front:"835",back:"Electronic Remittance Advice (ERA) — the payer's electronic explanation of how a claim was processed and paid.",color:"#D4A24E"},
+  {front:"CPT",back:"Current Procedural Terminology — AMA-maintained codes for physician and outpatient procedures. Used on professional claims.",color:"#6B5CA5"},
+  {front:"NDC",back:"National Drug Code — unique 10-digit identifier for every drug product (labeler + product + package size).",color:"#2E8B57"},
+];
+
+const sectionColors = ["","#0D7377","#2E8B57","#E8635A"];
+const sectionBgs = ["","#E8F8F8","#E6F5ED","#FFEBE9"];
+
+// ============ UTILITIES ============
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -21,800 +604,254 @@ function shuffle(arr) {
   return a;
 }
 
-const allQuizzes = [
-  // Section 1: RAC, MIP, HEAT, CMS IOM
-  {
-    section: 1,
-    q: "Which program hires private contractors to find and recover improper Medicare payments?",
-    correct: "Recovery Audit Contractor (RAC)",
-    wrong: [
-      "Medicare Integrity Program (MIP)",
-      "Health Care Fraud Action Team",
-      "CMS Internet Only Manual (IOM)",
-    ],
-    explanation: "RAC contractors are specifically hired by CMS to detect both overpayments and underpayments in the Medicare fee-for-service program and recover those funds.",
-  },
-  {
-    section: 1,
-    q: "What federal legislation authorizes CMS to contract out integrity work like audits and reviews?",
-    correct: "Medicare Integrity Program (MIP)",
-    wrong: [
-      "Recovery Audit Contractor (RAC)",
-      "Health Care Fraud Action Team",
-      "CMS Internet Only Manual (IOM)",
-    ],
-    explanation: "MIP, established by Section 1893 of the Social Security Act, gives CMS the legal authority to contract out program integrity functions including audits, cost-report reviews, and provider education.",
-  },
-  {
-    section: 1,
-    q: "A joint DOJ and HHS task force investigates healthcare fraud. What is this entity called?",
-    correct: "HEAT (Fraud Enforcement Team)",
-    wrong: [
-      "RAC (Recovery Audit Program)",
-      "MIP (Medicare Integrity Auth.)",
-      "IOM (CMS Operations Manual)",
-    ],
-    explanation: "HEAT (Health Care Fraud Prevention & Enforcement Action Team) is a joint Department of Justice and HHS initiative focused on criminal and civil prosecution of healthcare fraud.",
-  },
-  {
-    section: 1,
-    q: "Where do Medicare contractors find official step-by-step claims processing guidance?",
-    correct: "CMS Internet Only Manual (IOM)",
-    wrong: [
-      "Recovery Audit Contractor (RAC)",
-      "Medicare Integrity Program (MIP)",
-      "HEAT Fraud Enforcement Portal",
-    ],
-    explanation: "The CMS Internet Only Manual (IOM) is the official online publication providing Medicare contractors with detailed operational instructions for claims processing, coverage determinations, and program rules.",
-  },
-  {
-    section: 1,
-    q: "A coder notices a pattern of upcoding at their facility. Which entity might investigate this?",
-    correct: "HEAT task force investigators",
-    wrong: [
-      "CMS IOM manual publishers",
-      "Recovery Audit Contractors",
-      "Accreditation body surveyors",
-    ],
-    explanation: "Systematic upcoding is a form of fraud. HEAT investigates and prosecutes criminal fraud patterns, while RAC focuses on recovering individual improper payments rather than prosecuting fraud.",
-  },
-  {
-    section: 1,
-    q: "RAC auditors contact your facility requesting medical records. What is their primary goal?",
-    correct: "Identify and recoup overpayments",
-    wrong: [
-      "Prosecute providers for fraud",
-      "Update CMS operating manuals",
-      "Authorize new integrity audits",
-    ],
-    explanation: "RACs are specifically tasked with reviewing claims and medical records to identify improper payments — primarily overpayments that must be returned, but also underpayments owed to providers.",
-  },
-  // Section 2: CoPs & Deeming
-  {
-    section: 2,
-    q: "What must a healthcare facility meet to participate in the Medicare program?",
-    correct: "CMS Conditions of Participation",
-    wrong: [
-      "HIPAA transaction code mandates",
-      "RAC recovery audit benchmarks",
-      "State-only licensing agreements",
-    ],
-    explanation: "Conditions of Participation (CoPs) are the minimum health and safety standards set by CMS that facilities must meet to enroll in and receive payment from Medicare and Medicaid.",
-  },
-  {
-    section: 2,
-    q: "An accreditor's standards meet or exceed CMS requirements. CMS recognition of this is called?",
-    correct: "The deeming authority process",
-    wrong: [
-      "The certification audit cycle",
-      "The compliance waiver review",
-      "The provisional license grant",
-    ],
-    explanation: "Deeming is the process where CMS recognizes that an accreditation organization's standards are at least as stringent as the CoPs, allowing accredited facilities to be 'deemed' compliant.",
-  },
-  {
-    section: 2,
-    q: "Does deeming allow an accreditor to set standards lower than CMS requirements?",
-    correct: "No — standards must match or exceed",
-    wrong: [
-      "Yes — accreditors set their own bar",
-      "Yes — if the state grants a waiver",
-      "No — but only for critical-access sites",
-    ],
-    explanation: "Deeming never lowers the bar. An accreditor receives deeming authority only when CMS determines its standards meet or exceed every applicable Condition of Participation.",
-  },
-  {
-    section: 2,
-    q: "Which organization is the most widely recognized hospital accreditor with deeming authority?",
-    correct: "The Joint Commission (TJC body)",
-    wrong: [
-      "DNV Healthcare (ISO-based body)",
-      "AAAHC (ambulatory care body)",
-      "CARF (rehabilitation-focused org)",
-    ],
-    explanation: "The Joint Commission is the most widely recognized accrediting body with CMS deeming authority, accrediting thousands of hospitals, ambulatory care centers, and behavioral health facilities.",
-  },
-  {
-    section: 2,
-    q: "Can CMS still survey a facility that already holds deemed status from an accreditor?",
-    correct: "Yes — through validation surveys",
-    wrong: [
-      "No — deeming replaces all surveys",
-      "No — only the state may re-survey",
-      "Yes — but only within the first year",
-    ],
-    explanation: "CMS retains the right to conduct validation surveys on deemed facilities to verify that the accrediting organization is properly enforcing standards that meet or exceed the CoPs.",
-  },
-  {
-    section: 2,
-    q: "A facility accredited by a CMS-recognized body skips the state survey. Why is this allowed?",
-    correct: "Deemed status satisfies CMS rules",
-    wrong: [
-      "State surveys are always optional",
-      "Accreditation waives all oversight",
-      "The facility paid a one-time waiver",
-    ],
-    explanation: "When a facility holds accreditation from a body with CMS deeming authority, it is 'deemed' to meet CoPs without needing a separate state certification survey for Medicare participation.",
-  },
-  // Section 3: HIPAA Transactions & Code Sets
-  {
-    section: 3,
-    q: "Which HIPAA standard transaction is used to submit an electronic professional claim?",
-    correct: "ASC X12N 837 (claim submission)",
-    wrong: [
-      "ASC X12N 835 (payment remittance)",
-      "ASC X12N 270 (eligibility inquiry)",
-      "ASC X12N 276 (claim status check)",
-    ],
-    explanation: "The 837P (Professional) is the HIPAA-mandated standard for submitting professional claims electronically. The 837 family also includes 837I (Institutional) and 837D (Dental).",
-  },
-  {
-    section: 3,
-    q: "A billing office receives an electronic explanation of benefits from a payer. Which transaction?",
-    correct: "ASC X12N 835 (remittance advice)",
-    wrong: [
-      "ASC X12N 837 (claim submission tx)",
-      "ASC X12N 278 (prior authorization)",
-      "ASC X12N 834 (enrollment/disenroll)",
-    ],
-    explanation: "The 835 transaction is the electronic remittance advice (ERA) — the payer's explanation of how a claim was adjudicated, what was paid, adjusted, or denied, and why.",
-  },
-  {
-    section: 3,
-    q: "Before a patient visit, staff verify insurance coverage electronically. Which transaction pair?",
-    correct: "270/271 (eligibility inquiry/reply)",
-    wrong: [
-      "276/277 (claim status check/reply)",
-      "837/835 (claim submit and payment)",
-      "278/820 (auth request and premium)",
-    ],
-    explanation: "The 270 is the eligibility inquiry sent to the payer, and the 271 is the payer's response with the patient's coverage details — used before services are rendered.",
-  },
-  {
-    section: 3,
-    q: "Which code set is used for physician and outpatient procedure coding on claims?",
-    correct: "CPT codes (maintained by the AMA)",
-    wrong: [
-      "ICD-10-PCS (inpatient procedures)",
-      "NDC codes (drug product identifiers)",
-      "CDT codes (dental procedure system)",
-    ],
-    explanation: "Current Procedural Terminology (CPT), maintained by the American Medical Association, is the standard code set for reporting physician and outpatient services on professional claims.",
-  },
-  {
-    section: 3,
-    q: "A pharmacy claim requires a unique drug product identifier. Which code set applies?",
-    correct: "National Drug Code (NDC system)",
-    wrong: [
-      "CPT codes (procedure terminology)",
-      "HCPCS Level II (supplies and DME)",
-      "Revenue codes (facility locations)",
-    ],
-    explanation: "The National Drug Code (NDC) is a unique 10-digit identifier assigned to every drug product, identifying the labeler, product formulation, and package size.",
-  },
-  {
-    section: 3,
-    q: "HCPCS Level II codes cover which category that CPT does not fully address?",
-    correct: "Supplies, DME, drugs, and ambulance",
-    wrong: [
-      "Inpatient surgical procedure steps",
-      "Dental restorative care treatments",
-      "Outpatient office visit encounters",
-    ],
-    explanation: "HCPCS Level II national codes fill the gaps that CPT doesn't cover — including durable medical equipment (DME), prosthetics, orthotics, supplies, ambulance services, and certain drugs.",
-  },
-];
+// ============ TAB SWITCHING ============
+function switchTab(id) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.querySelector(`.tab-btn[data-tab="${id}"]`).classList.add('active');
+  if (id === 'quiz' && !quizRendered) renderQuiz();
+  if (id === 'match' && !matchRendered) renderMatch();
+  if (id === 'flash' && !flashRendered) renderFlash();
+}
 
-const matchingActivities = [
-  {
-    section: 1,
-    title: "Match the Acronym to Its Role",
-    pairs: [
-      { left: "RAC", right: "Recovers improper Medicare payments" },
-      { left: "MIP", right: "Authorizes integrity contract work" },
-      { left: "HEAT", right: "Prosecutes healthcare fraud cases" },
-      { left: "CMS IOM", right: "Official claims processing manual" },
-    ],
-  },
-  {
-    section: 2,
-    title: "Match the Accreditor to Its Focus",
-    pairs: [
-      { left: "TJC", right: "Hospitals and broad healthcare" },
-      { left: "DNV", right: "ISO quality plus Medicare CoPs" },
-      { left: "CARF", right: "Rehabilitation and behavioral" },
-      { left: "AAAHC", right: "Ambulatory surgery and clinics" },
-    ],
-  },
-  {
-    section: 3,
-    title: "Match the Transaction to Its Purpose",
-    pairs: [
-      { left: "837", right: "Submit electronic health claims" },
-      { left: "835", right: "Receive remittance advice (ERA)" },
-      { left: "270/271", right: "Verify patient eligibility" },
-      { left: "276/277", right: "Check claim processing status" },
-    ],
-  },
-];
+// ============ QUIZ ============
+let quizRendered = false;
+let currentFilter = 0;
+let quizAnswers = {};
+let quizSelected = {};
+let shuffledOptions = {};
 
-const flashcards = [
-  { front: "RAC", back: "Recovery Audit Contractor — private auditors hired by CMS to find and recover Medicare overpayments and underpayments.", color: TEAL },
-  { front: "MIP", back: "Medicare Integrity Program — Section 1893 of the SSA authorizing CMS to contract out integrity work like audits and education.", color: CORAL },
-  { front: "HEAT", back: "Health Care Fraud Prevention & Enforcement Action Team — joint DOJ + HHS task force that prosecutes fraud.", color: GOLD },
-  { front: "CMS IOM", back: "CMS Internet Only Manual — the official online reference guiding contractors on claims processing and coverage rules.", color: PURPLE },
-  { front: "CoPs", back: "Conditions of Participation — minimum health and safety standards that facilities must meet to bill Medicare/Medicaid.", color: GREEN },
-  { front: "Deeming", back: "The process where CMS recognizes an accreditor whose standards meet or exceed CoPs, granting facilities deemed status.", color: TEAL },
-  { front: "837", back: "HIPAA standard electronic claim transaction — supports professional (837P), institutional (837I), and dental (837D) claims.", color: CORAL },
-  { front: "835", back: "Electronic Remittance Advice (ERA) — the payer's electronic explanation of how a claim was processed and paid.", color: GOLD },
-  { front: "CPT", back: "Current Procedural Terminology — AMA-maintained codes for physician and outpatient procedures. Used on professional claims.", color: PURPLE },
-  { front: "NDC", back: "National Drug Code — unique 10-digit identifier for every drug product (labeler + product + package size).", color: GREEN },
-];
+function getFilteredQuizzes() {
+  return currentFilter === 0 ? allQuizzes : allQuizzes.filter(q => q.section === currentFilter);
+}
 
-function QuizQuestion({ quiz, onAnswer, answered, selected }) {
-  const [options] = useState(() => {
-    const all = [{ text: quiz.correct, isCorrect: true }, ...quiz.wrong.map(w => ({ text: w, isCorrect: false }))];
-    return shuffle(all);
+function renderQuiz() {
+  quizRendered = true;
+  quizAnswers = {};
+  quizSelected = {};
+  shuffledOptions = {};
+  const quizzes = getFilteredQuizzes();
+  quizzes.forEach((quiz, i) => {
+    const all = [{text: quiz.correct, isCorrect: true}, ...quiz.wrong.map(w => ({text: w, isCorrect: false}))];
+    shuffledOptions[i] = shuffle(all);
+  });
+  buildQuizHTML();
+}
+
+function buildQuizHTML() {
+  const quizzes = getFilteredQuizzes();
+  const el = document.getElementById('tab-quiz');
+  let html = `<div class="filter-row">`;
+  [{v:0,l:"All Sections"},{v:1,l:"🔍 Sec 1"},{v:2,l:"🏥 Sec 2"},{v:3,l:"📋 Sec 3"}].forEach(f => {
+    html += `<button class="filter-btn ${currentFilter===f.v?'active':''}" onclick="setQuizFilter(${f.v})">${f.l}</button>`;
+  });
+  html += `</div>`;
+
+  const answered = Object.keys(quizAnswers).length;
+  const correct = Object.values(quizAnswers).filter(v => v).length;
+
+  if (answered > 0) {
+    const pct = Math.round(correct / answered * 100);
+    const barColor = pct >= 70 ? 'var(--green)' : pct >= 40 ? 'var(--gold)' : 'var(--coral)';
+    html += `<div class="card score-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-weight:700;font-size:15px;color:var(--navy)">Score Progress</span>
+      <button class="reset-btn" onclick="resetQuiz()">Reset Quiz</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;color:#666">
+      <span>${correct} correct of ${answered} answered (${quizzes.length} total)</span>
+      <span style="font-weight:700;color:${barColor}">${correct}/${answered}</span>
+    </div>
+    <div class="score-bar-track"><div class="score-bar-fill" style="width:${pct}%;background:${barColor}"></div></div></div>`;
+  }
+
+  quizzes.forEach((quiz, i) => {
+    const opts = shuffledOptions[i];
+    const isAnswered = quizAnswers[i] !== undefined;
+    html += `<div class="card"><div style="margin-bottom:10px">
+      <span class="section-badge" style="background:${sectionBgs[quiz.section]};color:${sectionColors[quiz.section]}">Section ${quiz.section}</span>
+      <span style="font-size:12px;color:#999">Question ${i+1} of ${quizzes.length}</span></div>
+      <div class="quiz-q">${quiz.q}</div><div class="quiz-options">`;
+
+    opts.forEach((opt, j) => {
+      let cls = 'opt-btn';
+      let letterBg = '#E2E6EE';
+      let letterColor = 'var(--navy)';
+      let letterText = String.fromCharCode(65 + j);
+      if (isAnswered) {
+        cls += ' answered';
+        if (opt.isCorrect) { cls += ' correct'; letterBg = 'var(--green)'; letterColor = 'white'; letterText = '✓'; }
+        else if (quizSelected[i] === j && !opt.isCorrect) { cls += ' wrong'; letterBg = 'var(--coral)'; letterColor = 'white'; letterText = '✗'; }
+        else { cls += ' dimmed'; }
+      }
+      html += `<button class="${cls}" onclick="answerQuiz(${i},${j},${opt.isCorrect})">
+        <span class="opt-letter" style="background:${letterBg};color:${letterColor}">${letterText}</span>${opt.text}</button>`;
+    });
+
+    html += `</div>`;
+    if (isAnswered) {
+      const wasCorrect = quizAnswers[i];
+      html += `<div class="explanation ${wasCorrect ? 'right' : 'wrong-exp'}"><strong>${wasCorrect ? 'Correct! ' : 'Not quite! '}</strong>${quiz.explanation}</div>`;
+    }
+    html += `</div>`;
   });
 
-  return (
-    <div style={{ marginBottom: 20 }}>
-      <p style={{ fontWeight: 600, fontSize: 15, color: NAVY, marginBottom: 14, lineHeight: 1.6 }}>{quiz.q}</p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {options.map((opt, i) => {
-          let bg = "#F7F8FA";
-          let border = "#E2E6EE";
-          let color = NAVY;
-          if (answered) {
-            if (opt.isCorrect) { bg = GREEN_BG; border = GREEN; color = GREEN; }
-            else if (selected === i && !opt.isCorrect) { bg = CORAL_BG; border = CORAL; color = CORAL; }
-            else { bg = "#F0F0F0"; color = "#999"; }
-          }
-          return (
-            <button
-              key={i}
-              onClick={() => !answered && onAnswer(i, opt.isCorrect)}
-              style={{
-                padding: "12px 16px",
-                borderRadius: 10,
-                border: `2px solid ${border}`,
-                background: bg,
-                color,
-                fontWeight: 600,
-                fontSize: 14,
-                cursor: answered ? "default" : "pointer",
-                textAlign: "left",
-                transition: "all 0.2s",
-                fontFamily: "inherit",
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
-              <span style={{
-                width: 26, height: 26, borderRadius: 8,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                background: answered && opt.isCorrect ? GREEN : answered && selected === i && !opt.isCorrect ? CORAL : "#E2E6EE",
-                color: answered && (opt.isCorrect || selected === i) ? "white" : NAVY,
-                fontSize: 12, fontWeight: 700, flexShrink: 0,
-              }}>
-                {answered && opt.isCorrect ? "✓" : answered && selected === i && !opt.isCorrect ? "✗" : String.fromCharCode(65 + i)}
-              </span>
-              {opt.text}
-            </button>
-          );
-        })}
-      </div>
-      {answered && (
-        <div style={{
-          marginTop: 12, padding: "12px 16px", borderRadius: 10,
-          background: selected !== undefined && !options[selected]?.isCorrect ? CORAL_BG : GREEN_BG,
-          fontSize: 13, lineHeight: 1.6, color: NAVY,
-          borderLeft: `4px solid ${selected !== undefined && !options[selected]?.isCorrect ? CORAL : GREEN}`,
-        }}>
-          <strong>{selected !== undefined && !options[selected]?.isCorrect ? "Not quite! " : "Correct! "}</strong>
-          {quiz.explanation}
-        </div>
-      )}
-    </div>
-  );
+  if (answered === quizzes.length && quizzes.length > 0) {
+    const pct = Math.round(correct / quizzes.length * 100);
+    const icon = correct === quizzes.length ? '🏆' : pct >= 70 ? '🎉' : '📚';
+    const msg = correct === quizzes.length ? 'Perfect Score!' : pct >= 70 ? 'Great Job!' : 'Keep Studying!';
+    html += `<div class="final-score"><div class="big-icon">${icon}</div><h3>${msg}</h3>
+      <p>You got <strong>${correct}</strong> out of <strong>${quizzes.length}</strong> correct (${pct}%)</p>
+      <button class="retry-btn" onclick="resetQuiz()">Try Again</button></div>`;
+  }
+
+  el.innerHTML = html;
 }
 
-function MatchingGame({ activity, onComplete }) {
-  const [shuffledRight] = useState(() => shuffle(activity.pairs.map((p, i) => ({ text: p.right, idx: i }))));
-  const [selectedLeft, setSelectedLeft] = useState(null);
-  const [matches, setMatches] = useState({});
-  const [wrong, setWrong] = useState(null);
-  const done = Object.keys(matches).length === activity.pairs.length;
-
-  const handleRight = (rightIdx) => {
-    if (selectedLeft === null || done) return;
-    if (matches[selectedLeft] !== undefined) return;
-    const correctRightIdx = selectedLeft;
-    if (shuffledRight[rightIdx].idx === correctRightIdx) {
-      const m = { ...matches, [selectedLeft]: rightIdx };
-      setMatches(m);
-      setSelectedLeft(null);
-      if (Object.keys(m).length === activity.pairs.length) onComplete?.();
-    } else {
-      setWrong(rightIdx);
-      setTimeout(() => setWrong(null), 600);
-    }
-  };
-
-  const colors = [TEAL, CORAL, GOLD, PURPLE];
-
-  return (
-    <div>
-      <p style={{ fontSize: 13, color: "#666", marginBottom: 14 }}>Tap a term on the left, then tap its match on the right.</p>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {activity.pairs.map((p, i) => {
-            const matched = matches[i] !== undefined;
-            const active = selectedLeft === i;
-            return (
-              <button key={i} onClick={() => !matched && setSelectedLeft(i)} style={{
-                padding: "12px 14px", borderRadius: 10,
-                border: `2px solid ${active ? colors[i] : matched ? GREEN : "#E2E6EE"}`,
-                background: matched ? GREEN_BG : active ? `${colors[i]}15` : "#F7F8FA",
-                color: matched ? GREEN : active ? colors[i] : NAVY,
-                fontWeight: 700, fontSize: 14, cursor: matched ? "default" : "pointer",
-                fontFamily: "inherit", textAlign: "center", transition: "all 0.2s",
-                opacity: matched ? 0.6 : 1,
-              }}>
-                {matched && "✓ "}{p.left}
-              </button>
-            );
-          })}
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {shuffledRight.map((r, i) => {
-            const matched = Object.values(matches).includes(i);
-            const isWrong = wrong === i;
-            return (
-              <button key={i} onClick={() => handleRight(i)} style={{
-                padding: "12px 14px", borderRadius: 10,
-                border: `2px solid ${isWrong ? CORAL : matched ? GREEN : "#E2E6EE"}`,
-                background: isWrong ? CORAL_BG : matched ? GREEN_BG : "#F7F8FA",
-                color: isWrong ? CORAL : matched ? GREEN : NAVY,
-                fontWeight: 500, fontSize: 12, cursor: matched ? "default" : "pointer",
-                fontFamily: "inherit", textAlign: "center", transition: "all 0.2s",
-                lineHeight: 1.4, opacity: matched ? 0.6 : 1,
-              }}>
-                {matched && "✓ "}{r.text}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      {done && (
-        <div style={{
-          marginTop: 14, padding: "10px 16px", borderRadius: 10,
-          background: GREEN_BG, borderLeft: `4px solid ${GREEN}`,
-          fontSize: 14, fontWeight: 600, color: GREEN,
-        }}>
-          🎉 All matched correctly!
-        </div>
-      )}
-    </div>
-  );
+function setQuizFilter(v) {
+  currentFilter = v;
+  renderQuiz();
 }
 
-function Flashcard({ card }) {
-  const [flipped, setFlipped] = useState(false);
-  return (
-    <div onClick={() => setFlipped(!flipped)} style={{
-      minHeight: 180, borderRadius: 16, cursor: "pointer",
-      perspective: 800, userSelect: "none",
-    }}>
-      <div style={{
-        height: "100%", minHeight: 180, borderRadius: 16, padding: 24,
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        background: flipped ? "#fff" : `linear-gradient(135deg, ${card.color}, ${card.color}CC)`,
-        color: flipped ? NAVY : "white",
-        border: flipped ? `2px solid ${card.color}` : "none",
-        transition: "all 0.35s ease",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-      }}>
-        {!flipped ? (
-          <>
-            <div style={{ fontSize: 32, fontWeight: 800, fontFamily: "'DM Serif Display', serif", letterSpacing: 1 }}>{card.front}</div>
-            <div style={{ fontSize: 11, marginTop: 10, opacity: 0.7 }}>TAP TO REVEAL</div>
-          </>
-        ) : (
-          <>
-            <div style={{ fontSize: 13, lineHeight: 1.7, textAlign: "center" }}>{card.back}</div>
-            <div style={{ fontSize: 11, marginTop: 10, opacity: 0.5 }}>TAP TO FLIP BACK</div>
-          </>
-        )}
-      </div>
-    </div>
-  );
+function answerQuiz(qi, oi, isCorrect) {
+  if (quizAnswers[qi] !== undefined) return;
+  quizAnswers[qi] = isCorrect;
+  quizSelected[qi] = oi;
+  buildQuizHTML();
 }
 
-function ScoreBar({ correct, total, label }) {
-  const pct = total > 0 ? (correct / total) * 100 : 0;
-  return (
-    <div style={{ marginBottom: 6 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4, color: "#666" }}>
-        <span>{label}</span>
-        <span style={{ fontWeight: 700, color: pct >= 70 ? GREEN : pct >= 40 ? GOLD : CORAL }}>{correct}/{total}</span>
-      </div>
-      <div style={{ height: 8, borderRadius: 4, background: "#E8E8E8" }}>
-        <div style={{
-          height: "100%", borderRadius: 4, transition: "width 0.5s ease",
-          width: `${pct}%`,
-          background: pct >= 70 ? GREEN : pct >= 40 ? GOLD : CORAL,
-        }} />
-      </div>
-    </div>
-  );
+function resetQuiz() {
+  renderQuiz();
 }
 
-const sectionMeta = [
-  { num: 1, title: "RAC, MIP, HEAT & CMS IOM", color: TEAL, icon: "🔍" },
-  { num: 2, title: "Conditions of Participation & Deeming", color: GREEN, icon: "🏥" },
-  { num: 3, title: "HIPAA Transactions & Code Sets", color: CORAL, icon: "📋" },
-];
+// ============ MATCHING ============
+let matchRendered = false;
+let matchState = [];
 
-export default function App() {
-  const [tab, setTab] = useState("learn");
-  const [quizSection, setQuizSection] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [selectedOpt, setSelectedOpt] = useState({});
-  const [matchDone, setMatchDone] = useState({});
-  const [fcIndex, setFcIndex] = useState(0);
-
-  const sectionQuizzes = quizSection === 0 ? allQuizzes : allQuizzes.filter(q => q.section === quizSection);
-  const correctCount = Object.entries(answers).filter(([k, v]) => v).length;
-
-  const handleQuizAnswer = (qIdx, optIdx, isCorrect) => {
-    setAnswers(a => ({ ...a, [qIdx]: isCorrect }));
-    setSelectedOpt(s => ({ ...s, [qIdx]: optIdx }));
-  };
-
-  const resetQuiz = () => { setAnswers({}); setSelectedOpt({}); };
-
-  const tabs = [
-    { id: "learn", label: "📖 Learn", color: NAVY },
-    { id: "quiz", label: "✏️ Quiz", color: TEAL },
-    { id: "match", label: "🔗 Match", color: GOLD },
-    { id: "flash", label: "🃏 Cards", color: PURPLE },
-  ];
-
-  return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: "#FAFAF7", minHeight: "100vh" }}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-
-      {/* HERO */}
-      <div style={{
-        background: `linear-gradient(135deg, ${NAVY} 0%, #2C4370 50%, ${TEAL} 100%)`,
-        color: "white", padding: "40px 20px 30px", textAlign: "center",
-      }}>
-        <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "clamp(24px, 5vw, 36px)", marginBottom: 8 }}>
-          CMS & HIPAA Study Guide
-        </h1>
-        <p style={{ fontSize: 14, opacity: 0.8, maxWidth: 500, margin: "0 auto" }}>
-          Interactive learning for medical billers and coders
-        </p>
-      </div>
-
-      {/* TABS */}
-      <div style={{
-        display: "flex", gap: 0, background: "white",
-        borderBottom: "2px solid #E8E8E8", position: "sticky", top: 0, zIndex: 10,
-        overflowX: "auto",
-      }}>
-        {tabs.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{
-            flex: 1, padding: "14px 10px", border: "none",
-            borderBottom: tab === t.id ? `3px solid ${t.color}` : "3px solid transparent",
-            background: tab === t.id ? `${t.color}08` : "transparent",
-            color: tab === t.id ? t.color : "#888",
-            fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit",
-            transition: "all 0.2s", whiteSpace: "nowrap",
-          }}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      <div style={{ maxWidth: 800, margin: "0 auto", padding: "24px 16px 60px" }}>
-
-        {/* =================== LEARN TAB =================== */}
-        {tab === "learn" && (
-          <>
-            {/* SECTION 1 */}
-            <SectionHeader meta={sectionMeta[0]} />
-            <Card>
-              <p style={{ color: "#5A6B8A", fontSize: 14, lineHeight: 1.7, marginBottom: 14 }}>
-                These four programs all protect Medicare's financial integrity — but each has a distinct job. Think of them as a team:
-              </p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
-                {[
-                  { abbr: "RAC", name: "Recovery Audit Contractor", desc: "Private auditors who find and recover improper payments", bg: TEAL_BG, color: TEAL, icon: "🔍" },
-                  { abbr: "MIP", name: "Medicare Integrity Program", desc: "Legal authority for CMS to outsource integrity work", bg: CORAL_BG, color: CORAL, icon: "🛡️" },
-                  { abbr: "HEAT", name: "Fraud Enforcement Team", desc: "Joint DOJ + HHS criminal fraud prosecution team", bg: GOLD_BG, color: GOLD, icon: "⚖️" },
-                  { abbr: "IOM", name: "CMS Internet Only Manual", desc: "Official guide for claims processing and coverage", bg: PURPLE_BG, color: PURPLE, icon: "📘" },
-                ].map((c, i) => (
-                  <div key={i} style={{ background: c.bg, borderRadius: 12, padding: 16, textAlign: "center", borderTop: `4px solid ${c.color}` }}>
-                    <div style={{ fontSize: 26, marginBottom: 4 }}>{c.icon}</div>
-                    <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: c.color, marginBottom: 2 }}>{c.abbr}</div>
-                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: c.color, opacity: 0.7, marginBottom: 8 }}>{c.name}</div>
-                    <div style={{ fontSize: 12, color: "#555", lineHeight: 1.5 }}>{c.desc}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, margin: "20px 0 6px", flexWrap: "wrap" }}>
-                {[
-                  { label: "MIP", sub: "Authorizes", bg: CORAL_BG, color: CORAL },
-                  null,
-                  { label: "RAC", sub: "Audits", bg: TEAL_BG, color: TEAL },
-                  null,
-                  { label: "HEAT", sub: "Prosecutes", bg: GOLD_BG, color: GOLD },
-                ].map((s, i) => s ? (
-                  <div key={i} style={{ background: s.bg, color: s.color, padding: "10px 16px", borderRadius: 10, textAlign: "center", fontWeight: 700, fontSize: 13, minWidth: 90 }}>
-                    {s.label}<br /><span style={{ fontSize: 10, fontWeight: 500, opacity: 0.8 }}>{s.sub}</span>
-                  </div>
-                ) : (
-                  <span key={i} style={{ fontSize: 20, color: "#CCC" }}>→</span>
-                ))}
-              </div>
-              <p style={{ textAlign: "center", fontSize: 12, color: "#999", marginTop: 2 }}>CMS IOM provides the rulebook for everyone above ↑</p>
-            </Card>
-
-            {/* SECTION 2 */}
-            <SectionHeader meta={sectionMeta[1]} />
-            <Card>
-              <p style={{ color: "#5A6B8A", fontSize: 14, lineHeight: 1.7, marginBottom: 10 }}>
-                <strong style={{ color: NAVY }}>Conditions of Participation (CoPs)</strong> are the minimum health and safety standards every facility must meet to participate in Medicare/Medicaid.
-              </p>
-              <p style={{ color: "#5A6B8A", fontSize: 14, lineHeight: 1.7, marginBottom: 16 }}>
-                <strong style={{ color: GREEN }}>Deeming</strong> happens when CMS recognizes a private accreditor whose standards meet or exceed CoPs — accredited facilities are then "deemed" compliant without a separate state survey.
-              </p>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, flexWrap: "wrap", margin: "10px 0" }}>
-                {[
-                  { icon: "🏛️", label: "CMS", sub: "Sets CoPs", bg: TEAL_BG, border: TEAL },
-                  null,
-                  { icon: "🏅", label: "Accreditor", sub: "Standards ≥ CoPs", bg: GOLD_BG, border: GOLD },
-                  null,
-                  { icon: "🏥", label: "Facility", sub: "Deemed compliant", bg: GREEN_BG, border: GREEN },
-                ].map((b, i) => b ? (
-                  <div key={i} style={{ background: b.bg, border: `2px solid ${b.border}`, borderRadius: 14, padding: "16px 20px", textAlign: "center", minWidth: 130 }}>
-                    <div style={{ fontSize: 28 }}>{b.icon}</div>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: b.border, marginTop: 4 }}>{b.label}</div>
-                    <div style={{ fontSize: 11, color: "#666" }}>{b.sub}</div>
-                  </div>
-                ) : (
-                  <span key={i} style={{ fontSize: 22, color: GREEN, fontWeight: 700 }}>→</span>
-                ))}
-              </div>
-              <div style={{ background: "#FFF9ED", borderRadius: 10, padding: 14, marginTop: 16, borderLeft: `4px solid ${GOLD}`, fontSize: 13, lineHeight: 1.6, color: "#6B5300" }}>
-                <strong>Key point:</strong> Deeming never lowers the bar. The accreditor's standards must <em>match or exceed</em> CMS CoPs. CMS can still do validation surveys on deemed facilities.
-              </div>
-            </Card>
-
-            {/* SECTION 3 */}
-            <SectionHeader meta={sectionMeta[2]} />
-            <Card>
-              <p style={{ color: "#5A6B8A", fontSize: 14, lineHeight: 1.7, marginBottom: 14 }}>
-                HIPAA's Administrative Simplification mandates standard electronic formats (<strong>ASC X12N transactions</strong>) for all billing activities, replacing the old payer-specific paper and flat-file formats.
-              </p>
-              <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, borderRadius: 10, overflow: "hidden", border: `1px solid #E2E6EE`, fontSize: 13, marginBottom: 14 }}>
-                <thead>
-                  <tr style={{ background: TEAL, color: "white" }}>
-                    <th style={{ padding: "10px 12px", textAlign: "left" }}>Code</th>
-                    <th style={{ padding: "10px 12px", textAlign: "left" }}>Purpose</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    ["837", "Submit claims (professional, institutional, dental)"],
-                    ["835", "Remittance advice — explanation of payment"],
-                    ["270/271", "Eligibility inquiry and response"],
-                    ["276/277", "Claim status inquiry and response"],
-                    ["278", "Prior authorization / referral request"],
-                    ["834", "Enrollment and disenrollment"],
-                    ["820", "Premium payment transfers"],
-                  ].map(([code, desc], i) => (
-                    <tr key={i} style={{ background: i % 2 === 0 ? "white" : "#F7F8FA" }}>
-                      <td style={{ padding: "8px 12px", fontWeight: 700, color: TEAL }}>{code}</td>
-                      <td style={{ padding: "8px 12px", color: "#555" }}>{desc}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p style={{ color: "#5A6B8A", fontSize: 14, lineHeight: 1.7, marginBottom: 10 }}>
-                <strong style={{ color: NAVY }}>Code Sets</strong> are the standardized vocabulary inside the transactions:
-              </p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
-                {[
-                  { name: "ICD-10-CM/PCS", desc: "Diagnoses & inpatient procedures", color: CORAL },
-                  { name: "CPT", desc: "Physician & outpatient procedures", color: TEAL },
-                  { name: "HCPCS Level II", desc: "Supplies, DME, drugs, ambulance", color: GOLD },
-                  { name: "NDC", desc: "Drug product identifiers (10-digit)", color: PURPLE },
-                  { name: "CDT", desc: "Dental procedure codes", color: GREEN },
-                  { name: "Revenue Codes", desc: "Facility charge classification", color: NAVY },
-                ].map((c, i) => (
-                  <div key={i} style={{ background: "white", borderLeft: `4px solid ${c.color}`, borderRadius: 10, padding: "12px 14px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: c.color, marginBottom: 2 }}>{c.name}</div>
-                    <div style={{ fontSize: 12, color: "#666" }}>{c.desc}</div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </>
-        )}
-
-        {/* =================== QUIZ TAB =================== */}
-        {tab === "quiz" && (
-          <>
-            <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap" }}>
-              {[{ v: 0, l: "All Sections" }, ...sectionMeta.map(s => ({ v: s.num, l: `${s.icon} Sec ${s.num}` }))].map(f => (
-                <button key={f.v} onClick={() => { setQuizSection(f.v); resetQuiz(); }} style={{
-                  padding: "8px 14px", borderRadius: 8, border: "2px solid",
-                  borderColor: quizSection === f.v ? TEAL : "#E2E6EE",
-                  background: quizSection === f.v ? TEAL_BG : "white",
-                  color: quizSection === f.v ? TEAL : "#888",
-                  fontWeight: 600, fontSize: 12, cursor: "pointer", fontFamily: "inherit",
-                }}>
-                  {f.l}
-                </button>
-              ))}
-            </div>
-
-            {Object.keys(answers).length > 0 && (
-              <Card>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <span style={{ fontWeight: 700, fontSize: 15, color: NAVY }}>Score Progress</span>
-                  <button onClick={resetQuiz} style={{
-                    padding: "6px 14px", borderRadius: 8, border: `1px solid ${CORAL}`,
-                    background: CORAL_BG, color: CORAL, fontWeight: 600, fontSize: 12,
-                    cursor: "pointer", fontFamily: "inherit",
-                  }}>Reset Quiz</button>
-                </div>
-                <ScoreBar correct={correctCount} total={Object.keys(answers).length} label={`${correctCount} correct of ${Object.keys(answers).length} answered (${sectionQuizzes.length} total)`} />
-              </Card>
-            )}
-
-            {sectionQuizzes.map((quiz, i) => (
-              <Card key={`${quizSection}-${i}`}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                  <span style={{
-                    padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700,
-                    background: [TEAL_BG, GREEN_BG, CORAL_BG][quiz.section - 1],
-                    color: [TEAL, GREEN, CORAL][quiz.section - 1],
-                  }}>Section {quiz.section}</span>
-                  <span style={{ fontSize: 12, color: "#999" }}>Question {i + 1} of {sectionQuizzes.length}</span>
-                </div>
-                <QuizQuestion
-                  quiz={quiz}
-                  answered={answers[i] !== undefined}
-                  selected={selectedOpt[i]}
-                  onAnswer={(optIdx, isCorrect) => handleQuizAnswer(i, optIdx, isCorrect)}
-                />
-              </Card>
-            ))}
-
-            {Object.keys(answers).length === sectionQuizzes.length && (
-              <div style={{
-                background: `linear-gradient(135deg, ${NAVY}, ${TEAL})`,
-                borderRadius: 16, padding: 28, color: "white", textAlign: "center",
-              }}>
-                <div style={{ fontSize: 40, marginBottom: 8 }}>{correctCount === sectionQuizzes.length ? "🏆" : correctCount >= sectionQuizzes.length * 0.7 ? "🎉" : "📚"}</div>
-                <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 24, marginBottom: 6 }}>
-                  {correctCount === sectionQuizzes.length ? "Perfect Score!" : correctCount >= sectionQuizzes.length * 0.7 ? "Great Job!" : "Keep Studying!"}
-                </div>
-                <div style={{ fontSize: 15, opacity: 0.9 }}>
-                  You got <strong>{correctCount}</strong> out of <strong>{sectionQuizzes.length}</strong> correct ({Math.round(correctCount / sectionQuizzes.length * 100)}%)
-                </div>
-                <button onClick={resetQuiz} style={{
-                  marginTop: 16, padding: "10px 24px", borderRadius: 10, border: "2px solid rgba(255,255,255,0.4)",
-                  background: "rgba(255,255,255,0.15)", color: "white", fontWeight: 700,
-                  fontSize: 14, cursor: "pointer", fontFamily: "inherit",
-                }}>Try Again</button>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* =================== MATCHING TAB =================== */}
-        {tab === "match" && (
-          <>
-            <p style={{ fontSize: 14, color: "#666", marginBottom: 20 }}>
-              Test your knowledge by matching terms to their definitions. Tap a term on the left, then its match on the right.
-            </p>
-            {matchingActivities.map((act, i) => (
-              <Card key={i}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                  <span style={{
-                    width: 30, height: 30, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
-                    background: sectionMeta[act.section - 1].color, color: "white", fontSize: 14, fontWeight: 700,
-                  }}>{act.section}</span>
-                  <h3 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, color: NAVY }}>{act.title}</h3>
-                  {matchDone[i] && <span style={{ marginLeft: "auto", fontSize: 12, color: GREEN, fontWeight: 700 }}>✓ Complete</span>}
-                </div>
-                <MatchingGame activity={act} onComplete={() => setMatchDone(d => ({ ...d, [i]: true }))} />
-              </Card>
-            ))}
-          </>
-        )}
-
-        {/* =================== FLASHCARDS TAB =================== */}
-        {tab === "flash" && (
-          <>
-            <p style={{ fontSize: 14, color: "#666", marginBottom: 16 }}>
-              Tap each card to reveal the definition. Use the arrows to navigate.
-            </p>
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginBottom: 16 }}>
-              <button onClick={() => setFcIndex(Math.max(0, fcIndex - 1))} disabled={fcIndex === 0} style={{
-                width: 40, height: 40, borderRadius: 10, border: "2px solid #E2E6EE",
-                background: "white", fontSize: 18, cursor: fcIndex === 0 ? "default" : "pointer",
-                opacity: fcIndex === 0 ? 0.3 : 1, fontFamily: "inherit", color: NAVY,
-              }}>←</button>
-              <span style={{ fontSize: 14, fontWeight: 600, color: "#888" }}>{fcIndex + 1} / {flashcards.length}</span>
-              <button onClick={() => setFcIndex(Math.min(flashcards.length - 1, fcIndex + 1))} disabled={fcIndex === flashcards.length - 1} style={{
-                width: 40, height: 40, borderRadius: 10, border: "2px solid #E2E6EE",
-                background: "white", fontSize: 18, cursor: fcIndex === flashcards.length - 1 ? "default" : "pointer",
-                opacity: fcIndex === flashcards.length - 1 ? 0.3 : 1, fontFamily: "inherit", color: NAVY,
-              }}>→</button>
-            </div>
-            <Flashcard card={flashcards[fcIndex]} key={fcIndex} />
-            <div style={{ display: "flex", gap: 6, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
-              {flashcards.map((_, i) => (
-                <button key={i} onClick={() => setFcIndex(i)} style={{
-                  width: 10, height: 10, borderRadius: "50%", border: "none",
-                  background: i === fcIndex ? flashcards[i].color : "#DDD",
-                  cursor: "pointer", transition: "all 0.2s",
-                }} />
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
+function renderMatch() {
+  matchRendered = true;
+  matchState = matchingActivities.map(act => ({
+    shuffledRight: shuffle(act.pairs.map((p, i) => ({text: p.right, idx: i}))),
+    selectedLeft: null,
+    matches: {},
+    wrong: null,
+  }));
+  buildMatchHTML();
 }
 
-function SectionHeader({ meta }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 32, marginBottom: 14 }}>
-      <div style={{
-        width: 40, height: 40, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center",
-        background: meta.color, color: "white", fontFamily: "'DM Serif Display', serif", fontSize: 20,
-      }}>{meta.num}</div>
-      <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "clamp(18px, 4vw, 24px)", color: NAVY }}>{meta.title}</h2>
+function buildMatchHTML() {
+  const el = document.getElementById('tab-match');
+  let html = `<p style="font-size:14px;color:#666;margin-bottom:20px">Test your knowledge by matching terms to their definitions. Tap a term on the left, then its match on the right.</p>`;
+  const leftColors = ['#0D7377','#E8635A','#D4A24E','#6B5CA5'];
+
+  matchingActivities.forEach((act, ai) => {
+    const st = matchState[ai];
+    const done = Object.keys(st.matches).length === act.pairs.length;
+    html += `<div class="card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <span style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:${sectionColors[act.section]};color:white;font-size:14px;font-weight:700">${act.section}</span>
+      <h3 style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy)">${act.title}</h3>
+      ${done ? '<span style="margin-left:auto;font-size:12px;color:var(--green);font-weight:700">✓ Complete</span>' : ''}
     </div>
-  );
+    <p style="font-size:13px;color:#666;margin-bottom:14px">Tap a term on the left, then tap its match on the right.</p>
+    <div class="match-grid"><div class="match-col">`;
+
+    act.pairs.forEach((p, li) => {
+      const matched = st.matches[li] !== undefined;
+      const active = st.selectedLeft === li;
+      let cls = 'match-btn';
+      if (matched) cls += ' matched';
+      else if (active) cls += ' selected';
+      html += `<button class="${cls}" onclick="matchLeft(${ai},${li})" style="${active ? 'border-color:'+leftColors[li]+';color:'+leftColors[li]+';background:'+leftColors[li]+'10' : ''}">${matched ? '✓ ' : ''}${p.left}</button>`;
+    });
+
+    html += `</div><div class="match-col">`;
+
+    st.shuffledRight.forEach((r, ri) => {
+      const matched = Object.values(st.matches).includes(ri);
+      const isWrong = st.wrong === ri;
+      let cls = 'match-btn right-side';
+      if (matched) cls += ' matched';
+      if (isWrong) cls += ' flash-wrong';
+      html += `<button class="${cls}" onclick="matchRight(${ai},${ri})">${matched ? '✓ ' : ''}${r.text}</button>`;
+    });
+
+    html += `</div></div>`;
+    if (done) html += `<div class="match-success">🎉 All matched correctly!</div>`;
+    html += `</div>`;
+  });
+
+  el.innerHTML = html;
 }
 
-function Card({ children }) {
-  return (
-    <div style={{
-      background: "white", borderRadius: 14, padding: "20px", marginBottom: 16,
-      border: "1px solid #E8E8E8", boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
-    }}>
-      {children}
-    </div>
-  );
+function matchLeft(ai, li) {
+  const st = matchState[ai];
+  if (st.matches[li] !== undefined) return;
+  st.selectedLeft = li;
+  buildMatchHTML();
 }
+
+function matchRight(ai, ri) {
+  const st = matchState[ai];
+  if (st.selectedLeft === null) return;
+  if (Object.values(st.matches).includes(ri)) return;
+  if (st.matches[st.selectedLeft] !== undefined) return;
+
+  if (st.shuffledRight[ri].idx === st.selectedLeft) {
+    st.matches[st.selectedLeft] = ri;
+    st.selectedLeft = null;
+    buildMatchHTML();
+  } else {
+    st.wrong = ri;
+    buildMatchHTML();
+    setTimeout(() => { st.wrong = null; buildMatchHTML(); }, 600);
+  }
+}
+
+// ============ FLASHCARDS ============
+let flashRendered = false;
+let fcIndex = 0;
+let fcFlipped = false;
+
+function renderFlash() {
+  flashRendered = true;
+  fcIndex = 0;
+  fcFlipped = false;
+  buildFlashHTML();
+}
+
+function buildFlashHTML() {
+  const el = document.getElementById('tab-flash');
+  const card = flashcards[fcIndex];
+  let html = `<p style="font-size:14px;color:#666;margin-bottom:16px">Tap each card to reveal the definition. Use the arrows to navigate.</p>
+    <div class="fc-nav">
+      <button class="fc-arrow" onclick="fcPrev()" ${fcIndex===0?'disabled':''}>←</button>
+      <span style="font-size:14px;font-weight:600;color:#888">${fcIndex+1} / ${flashcards.length}</span>
+      <button class="fc-arrow" onclick="fcNext()" ${fcIndex===flashcards.length-1?'disabled':''}>→</button>
+    </div>`;
+
+  if (!fcFlipped) {
+    html += `<div class="fc-card" onclick="flipCard()" style="background:linear-gradient(135deg,${card.color},${card.color}CC);color:white">
+      <div class="fc-term">${card.front}</div>
+      <div class="fc-hint">TAP TO REVEAL</div></div>`;
+  } else {
+    html += `<div class="fc-card" onclick="flipCard()" style="background:white;color:var(--navy);border:2px solid ${card.color}">
+      <div class="fc-def">${card.back}</div>
+      <div class="fc-hint" style="color:#999">TAP TO FLIP BACK</div></div>`;
+  }
+
+  html += `<div class="fc-dots">`;
+  flashcards.forEach((_, i) => {
+    html += `<button class="fc-dot" onclick="fcGo(${i})" style="background:${i===fcIndex ? flashcards[i].color : '#DDD'}"></button>`;
+  });
+  html += `</div>`;
+
+  el.innerHTML = html;
+}
+
+function flipCard() { fcFlipped = !fcFlipped; buildFlashHTML(); }
+function fcPrev() { if (fcIndex > 0) { fcIndex--; fcFlipped = false; buildFlashHTML(); } }
+function fcNext() { if (fcIndex < flashcards.length - 1) { fcIndex++; fcFlipped = false; buildFlashHTML(); } }
+function fcGo(i) { fcIndex = i; fcFlipped = false; buildFlashHTML(); }
+</script>
+</body>
+</html>
