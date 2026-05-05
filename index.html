@@ -404,6 +404,95 @@ body {
   border: none; cursor: pointer; transition: all 0.2s;
 }
 
+
+/* TOP SCORE DASHBOARD + FINAL AMPLIFY REPORT */
+.score-dashboard {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+}
+.score-dashboard-title {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-bottom:12px;
+}
+.score-dashboard-title h3 {
+  font-family:'DM Serif Display',serif;
+  color:var(--navy);
+  font-size:20px;
+}
+.score-pill {
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
+  background:var(--teal-bg);
+  color:var(--teal);
+  white-space:nowrap;
+}
+.score-metrics {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin-bottom:12px;
+}
+.score-metric {
+  border-radius:12px;
+  padding:12px;
+  text-align:center;
+  background:#F7F8FA;
+  border:1px solid #EEF1F5;
+}
+.score-metric .num { font-size:22px; font-weight:900; color:var(--navy); }
+.score-metric .label { font-size:11px; color:#6B7280; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+.report-box {
+  background:#F7F8FA;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:16px;
+  margin-top:14px;
+}
+.report-box h4 {
+  font-family:'DM Serif Display',serif;
+  color:var(--navy);
+  font-size:19px;
+  margin-bottom:8px;
+}
+.report-output {
+  width:100%;
+  min-height:190px;
+  resize:vertical;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px;
+  font-family:'DM Sans',sans-serif;
+  font-size:13px;
+  color:var(--navy);
+  line-height:1.6;
+  background:white;
+  margin-top:10px;
+}
+.copy-btn {
+  margin-top:10px;
+  padding:10px 16px;
+  border:none;
+  border-radius:10px;
+  background:var(--teal);
+  color:white;
+  font-weight:800;
+  cursor:pointer;
+  font-family:inherit;
+  box-shadow:0 3px 10px rgba(13,115,119,0.2);
+}
+.copy-btn:hover { filter:brightness(0.95); }
+.copy-note { font-size:12px; color:var(--green); font-weight:700; margin-left:10px; display:none; }
+@media (max-width: 600px) { .score-metrics { grid-template-columns:1fr; } }
+
 @media (max-width: 600px) {
   .acronym-grid { grid-template-columns: 1fr 1fr; }
   .deeming-row { flex-direction: column; }
@@ -428,6 +517,7 @@ body {
 </div>
 
 <div class="container">
+<div id="top-score-dashboard"></div>
 
 <!-- ====================== LEARN TAB ====================== -->
 <div id="tab-learn" class="tab-content active">
@@ -639,9 +729,74 @@ function renderQuiz() {
   buildQuizHTML();
 }
 
+function getQuizStats() {
+  const quizzes = getFilteredQuizzes();
+  const answered = Object.keys(quizAnswers).length;
+  const correct = Object.values(quizAnswers).filter(v => v).length;
+  const pct = answered ? Math.round(correct / answered * 100) : 0;
+  return {quizzes, answered, correct, pct};
+}
+
+function getPerformanceLevel(pct, answered, total) {
+  if (answered === 0) return 'Not started yet';
+  if (answered < total) return 'In progress';
+  if (pct >= 90) return 'Mastery level';
+  if (pct >= 75) return 'Strong performance';
+  if (pct >= 60) return 'Developing understanding';
+  return 'Needs targeted review';
+}
+
+function buildStudentReport() {
+  const {quizzes, answered, correct, pct} = getQuizStats();
+  const total = quizzes.length;
+  const missed = [];
+  quizzes.forEach((quiz, i) => {
+    if (quizAnswers[i] === false) missed.push(`Question ${i+1}: ${quiz.q}`);
+  });
+  const sectionCounts = {1:{a:0,c:0,t:0},2:{a:0,c:0,t:0},3:{a:0,c:0,t:0}};
+  quizzes.forEach((quiz, i) => {
+    sectionCounts[quiz.section].t++;
+    if (quizAnswers[i] !== undefined) sectionCounts[quiz.section].a++;
+    if (quizAnswers[i] === true) sectionCounts[quiz.section].c++;
+  });
+  const sectionNames = {1:'RAC, MIP, HEAT, and CMS IOM',2:'Conditions of Participation and deeming',3:'HIPAA transactions and code sets'};
+  const sectionLines = Object.keys(sectionCounts).filter(k => sectionCounts[k].t > 0).map(k => {
+    const sc = sectionCounts[k];
+    const sp = sc.a ? Math.round(sc.c/sc.a*100) : 0;
+    return `Section ${k} (${sectionNames[k]}): ${sc.c}/${sc.a || 0} answered correctly${sc.a ? ` (${sp}%)` : ' (not attempted yet)'}.`;
+  }).join('\n');
+  let analysis = '';
+  if (answered === 0) analysis = 'I have not started the quiz yet. I need to answer the questions first so my instructor can evaluate my understanding.';
+  else if (answered < total) analysis = `I am still working. So far, I answered ${answered} of ${total} questions with ${correct} correct. My current score is ${pct}%, but this may change after I finish.`;
+  else if (pct >= 90) analysis = 'My performance shows strong mastery. I understand the differences between compliance programs, accrediting/deeming rules, and HIPAA electronic transaction standards.';
+  else if (pct >= 75) analysis = 'My performance is strong, but I should still review the questions I missed so I can explain the reasoning, not just recognize the answer.';
+  else if (pct >= 60) analysis = 'My performance shows partial understanding. I need targeted review, especially on the concepts connected to the questions I missed.';
+  else analysis = 'My performance shows that I need to review the core concepts again before moving forward. I should focus on definitions, roles, and how each concept appears in real billing and coding situations.';
+  const missedText = missed.length ? missed.join('\n') : 'No missed questions recorded for the current filter.';
+  return `Student Quiz Evaluation for Amplify\n\nOverall Score: ${correct}/${answered || 0} correct${answered ? ` (${pct}%)` : ''}\nQuestions Completed: ${answered}/${total}\nPerformance Level: ${getPerformanceLevel(pct, answered, total)}\n\nSection Breakdown:\n${sectionLines}\n\nAnalysis:\n${analysis}\n\nQuestions/Concepts to Review:\n${missedText}\n\nNext Study Step:\nI will review the flashcards and explanations for the missed concepts, then retake the quiz to improve accuracy and confidence.`;
+}
+
+function renderTopScoreDashboard() {
+  const dash = document.getElementById('top-score-dashboard');
+  if (!dash) return;
+  const {quizzes, answered, correct, pct} = getQuizStats();
+  const total = quizzes.length;
+  const barColor = pct >= 70 ? 'var(--green)' : pct >= 40 ? 'var(--gold)' : 'var(--coral)';
+  dash.innerHTML = `<div class="score-dashboard">
+    <div class="score-dashboard-title"><h3>My Score Tracker</h3><span class="score-pill">${getPerformanceLevel(pct, answered, total)}</span></div>
+    <div class="score-metrics">
+      <div class="score-metric"><div class="num">${correct}</div><div class="label">Correct</div></div>
+      <div class="score-metric"><div class="num">${answered}/${total}</div><div class="label">Completed</div></div>
+      <div class="score-metric"><div class="num">${answered ? pct : 0}%</div><div class="label">Current Score</div></div>
+    </div>
+    <div class="score-bar-track"><div class="score-bar-fill" style="width:${answered ? pct : 0}%;background:${barColor}"></div></div>
+  </div>`;
+}
+
 function buildQuizHTML() {
   const quizzes = getFilteredQuizzes();
   const el = document.getElementById('tab-quiz');
+  renderTopScoreDashboard();
   let html = `<div class="filter-row">`;
   [{v:0,l:"All Sections"},{v:1,l:"🔍 Sec 1"},{v:2,l:"🏥 Sec 2"},{v:3,l:"📋 Sec 3"}].forEach(f => {
     html += `<button class="filter-btn ${currentFilter===f.v?'active':''}" onclick="setQuizFilter(${f.v})">${f.l}</button>`;
@@ -702,7 +857,11 @@ function buildQuizHTML() {
     const msg = correct === quizzes.length ? 'Perfect Score!' : pct >= 70 ? 'Great Job!' : 'Keep Studying!';
     html += `<div class="final-score"><div class="big-icon">${icon}</div><h3>${msg}</h3>
       <p>You got <strong>${correct}</strong> out of <strong>${quizzes.length}</strong> correct (${pct}%)</p>
-      <button class="retry-btn" onclick="resetQuiz()">Try Again</button></div>`;
+      <button class="retry-btn" onclick="resetQuiz()">Try Again</button></div>
+      <div class="report-box"><h4>Final Evaluation & Analysis for Amplify</h4>
+      <p style="font-size:13px;color:#666;margin-bottom:6px">Copy this report and paste it into Amplify so your instructor can see your score, section breakdown, and study plan.</p>
+      <textarea id="student-report" class="report-output" readonly>${buildStudentReport()}</textarea>
+      <button class="copy-btn" onclick="copyStudentReport()">Copy Evaluation for Amplify</button><span id="copy-note" class="copy-note">Copied!</span></div>`;
   }
 
   el.innerHTML = html;
@@ -852,6 +1011,24 @@ function flipCard() { fcFlipped = !fcFlipped; buildFlashHTML(); }
 function fcPrev() { if (fcIndex > 0) { fcIndex--; fcFlipped = false; buildFlashHTML(); } }
 function fcNext() { if (fcIndex < flashcards.length - 1) { fcIndex++; fcFlipped = false; buildFlashHTML(); } }
 function fcGo(i) { fcIndex = i; fcFlipped = false; buildFlashHTML(); }
+
+function copyStudentReport() {
+  const report = document.getElementById('student-report');
+  if (!report) return;
+  report.select();
+  report.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(report.value).then(() => {
+    const note = document.getElementById('copy-note');
+    if (note) { note.style.display = 'inline'; setTimeout(() => note.style.display = 'none', 1800); }
+  }).catch(() => {
+    document.execCommand('copy');
+    const note = document.getElementById('copy-note');
+    if (note) { note.style.display = 'inline'; setTimeout(() => note.style.display = 'none', 1800); }
+  });
+}
+
+renderQuiz();
+renderTopScoreDashboard();
 </script>
 </body>
 </html>
